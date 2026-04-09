@@ -1,0 +1,17 @@
+services:
+  app:
+    restart: always
+    environment:
+      APP_ENV: production
+      LOG_LEVEL: WARNING
+      DEBUG: "false"
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+
+  db:
+    restart: always
+
+  frontend:
+    restart: always

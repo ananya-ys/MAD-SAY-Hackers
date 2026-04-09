@@ -13,7 +13,12 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+<<<<<<< HEAD
+from alembic import command as alembic_command
+from alembic.config import Config
+=======
 
+>>>>>>> origin/main
 from app.core.config import settings
 from app.core.logging import configure_logging, correlation_id_var, get_logger
 
@@ -83,7 +88,11 @@ app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 # ── CORS ──────────────────────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
+<<<<<<< HEAD
+    allow_origins=["*"],  # frontend on :3000 and :5173
+=======
     allow_origins=["*"] if not settings.is_production else [],
+>>>>>>> origin/main
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -133,3 +142,12 @@ app.include_router(repairs.router, prefix="/api/v1")       # /api/v1/repairs
 app.include_router(rules.router, prefix="/api/v1")         # /api/v1/rules
 app.include_router(memory.router, prefix="/api/v1")        # /api/v1/memory
 app.include_router(wiki.router, prefix="/api/v1")          # /api/v1/wiki
+
+
+try:
+    alembic_cfg = Config("alembic.ini")
+    alembic_command.upgrade(alembic_cfg, "head")
+    logger.info("alembic_upgrade_completed")
+except Exception as exc:
+    logger.warning("alembic_upgrade_failed", error=str(exc))
+

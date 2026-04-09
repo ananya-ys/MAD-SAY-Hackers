@@ -1,0 +1,58 @@
+services:
+  - type: web
+    name: autofix-ai-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+
+    envVars:
+      - key: APP_ENV
+        value: production
+
+      - key: SECRET_KEY
+        generateValue: true
+
+      - key: DATABASE_URL
+        value: sqlite:///./autofix.db
+
+      - key: USE_MOCK_LLM
+        value: "true"
+
+    healthCheckPath: /healthservices:
+  - type: web
+    name: autofix-ai-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: autofix-ai-db
+          property: connectionString
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: LOG_LEVEL
+        value: WARNING
+      - key: WIKI_DIR
+        value: /app/debug_wiki/errors
+    healthCheckPath: /health
+
+  - type: web
+    name: autofix-ai-frontend
+    runtime: static
+    staticPublishPath: ./frontend
+    plan: free
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+databases:
+  - name: autofix-ai-db
+    plan: free
+    databaseName: autofix
+    user: autofix

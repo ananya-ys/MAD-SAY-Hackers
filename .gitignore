@@ -1,2 +1,18 @@
+<<<<<<< HEAD
+__pycache__/
+*.pyc
+*.pyo
+.env
+*.db
+*.sqlite
+debug_wiki/errors/*.md
+.DS_Store
+node_modules/
+dist/
+*.egg-info/
+.venv/
+venv/
+=======
 .env
 *:Zone.Identifier
+>>>>>>> origin/main

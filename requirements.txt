@@ -56,3 +56,9 @@ slowapi==0.1.9
 pydantic-settings==2.7.0
 pydantic-settings==2.7.0
 email-validator==2.2.0
+<<<<<<< HEAD
+
+uvicorn
+gunicorn
+=======
+>>>>>>> origin/main

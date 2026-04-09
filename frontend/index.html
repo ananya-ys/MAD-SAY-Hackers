@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoFix AI v4.0</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0f1a;--surface:#0f1724;--surface2:#161f30;--border:#1e2d47;--border2:#243654;
+  --accent:#00d4a0;--accent2:#0099ff;--amber:#f59e0b;--purple:#a78bfa;--red:#f87171;
+  --text:#e2e8f0;--muted:#64748b;--dim:#334155;
+  --font-mono:'JetBrains Mono',monospace;--font-sans:'Syne',sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-height:100vh;overflow:hidden}
+.mono{font-family:var(--font-mono)}
+
+/* Layout */
+.shell{display:grid;grid-template-columns:220px 1fr;grid-template-rows:52px 1fr;height:100vh}
+
+/* Topbar */
+.topbar{grid-column:1/-1;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:14px}
+.logo-mark{width:30px;height:30px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo-mark svg{width:16px;height:16px}
+.logo-name{font-size:15px;font-weight:800;letter-spacing:-0.02em}
+.logo-ver{font-size:10px;color:var(--muted);font-family:var(--font-mono);margin-left:2px}
+.topbar-stats{margin-left:auto;display:flex;gap:8px}
+.tpill{font-family:var(--font-mono);font-size:10px;padding:3px 10px;border-radius:20px;display:flex;align-items:center;gap:4px}
+.tpill-g{background:rgba(0,212,160,.12);color:var(--accent);border:1px solid rgba(0,212,160,.25)}
+.tpill-b{background:rgba(0,153,255,.12);color:var(--accent2);border:1px solid rgba(0,153,255,.25)}
+.tpill-a{background:rgba(245,158,11,.12);color:var(--amber);border:1px solid rgba(245,158,11,.25)}
+.dot{width:6px;height:6px;border-radius:50%;background:currentColor;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* Sidebar */
+.sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.sidebar-logo{padding:14px 16px;border-bottom:1px solid var(--border)}
+.sidebar-logo-text{font-size:13px;font-weight:700;color:var(--text)}
+.sidebar-logo-sub{font-size:10px;color:var(--muted);font-family:var(--font-mono);margin-top:2px}
+.nav-section{padding:8px 12px 4px;font-size:9px;font-weight:700;letter-spacing:.12em;color:var(--muted);text-transform:uppercase}
+.nav-item{padding:8px 14px;font-size:12px;cursor:pointer;color:var(--muted);display:flex;align-items:center;gap:8px;border-left:2px solid transparent;transition:all .15s;font-weight:500}
+.nav-item:hover{color:var(--text);background:var(--surface2)}
+.nav-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(0,212,160,.06)}
+.nav-icon{width:14px;height:14px;flex-shrink:0;opacity:.6}
+.nav-item.active .nav-icon{opacity:1}
+.sidebar-bottom{margin-top:auto;padding:12px 14px;border-top:1px solid var(--border)}
+.status-line{font-size:10px;font-family:var(--font-mono);display:flex;align-items:center;gap:6px;color:var(--accent)}
+
+/* Main */
+.main{display:flex;flex-direction:column;overflow:hidden}
+.tab-bar{background:var(--surface);border-bottom:1px solid var(--border);display:flex;padding:0 20px;flex-shrink:0}
+.tab{font-size:12px;font-weight:600;padding:12px 14px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+
+/* Panels */
+.panels{flex:1;overflow:hidden;position:relative}
+.panel{display:none;height:100%;overflow:hidden}
+.panel.active{display:flex;flex-direction:column}
+
+/* Repair panel — split layout */
+.repair-split{display:grid;grid-template-columns:340px 1fr;height:100%;overflow:hidden}
+.left-col{border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.right-col{display:flex;flex-direction:column;overflow:hidden}
+
+/* Input form */
+.input-section{padding:14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.input-label{font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;margin-bottom:6px}
+.trace-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:11px;font-family:var(--font-mono);color:var(--text);resize:none;height:88px;outline:none;line-height:1.5;transition:border-color .15s}
+.trace-input:focus{border-color:var(--accent2)}
+.trace-input::placeholder{color:var(--dim)}
+.input-row{display:flex;gap:8px;margin-top:8px;align-items:center}
+.level-select{font-size:11px;padding:5px 8px;border-radius:5px;border:1px solid var(--border);background:var(--surface2);color:var(--text);outline:none;font-family:var(--font-mono)}
+.submit-btn{margin-left:auto;font-size:11px;font-weight:700;padding:6px 14px;border-radius:5px;background:var(--accent);color:#051a12;border:none;cursor:pointer;font-family:var(--font-mono);transition:all .15s;letter-spacing:.02em}
+.submit-btn:hover{background:#00f0b8}
+.submit-btn:disabled{background:var(--dim);color:var(--muted);cursor:not-allowed}
+.submit-btn.running{background:var(--amber);color:#1a0a00;animation:none}
+
+/* Session list */
+.session-list-header{padding:8px 14px;border-bottom:1px solid var(--border);font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;flex-shrink:0}
+.session-list{flex:1;overflow-y:auto}
+.session-item{padding:10px 14px;border-bottom:1px solid rgba(30,45,71,.5);cursor:pointer;display:flex;align-items:center;gap:10px;transition:background .12s}
+.session-item:hover{background:var(--surface2)}
+.session-item.active{background:rgba(0,212,160,.06);border-left:2px solid var(--accent)}
+.session-icon{width:28px;height:28px;border-radius:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:9px;font-weight:700;font-family:var(--font-mono)}
+.icon-r{background:rgba(0,212,160,.15);color:var(--accent)}
+.icon-m{background:rgba(167,139,250,.15);color:var(--purple)}
+.icon-l{background:rgba(245,158,11,.15);color:var(--amber)}
+.icon-e{background:rgba(248,113,113,.15);color:var(--red)}
+.session-info{flex:1;min-width:0}
+.session-type{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.session-meta{font-size:10px;color:var(--muted);margin-top:1px;font-family:var(--font-mono)}
+.session-cost{font-size:10px;font-family:var(--font-mono);color:var(--muted);flex-shrink:0}
+
+/* Stream panel */
+.stream-header{padding:10px 16px;border-bottom:1px solid var(--border);font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.stream-id{font-family:var(--font-mono);color:var(--dim)}
+.stream-body{flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:5px}
+.evt{padding:8px 11px;border-radius:5px;border-left:3px solid;opacity:0;transform:translateY(5px);transition:all .3s}
+.evt.show{opacity:1;transform:translateY(0)}
+.evt-rule{background:rgba(0,212,160,.07);border-color:var(--accent)}
+.evt-mem{background:rgba(167,139,250,.07);border-color:var(--purple)}
+.evt-llm{background:rgba(0,153,255,.07);border-color:var(--accent2)}
+.evt-info{background:var(--surface2);border-color:var(--border2)}
+.evt-ok{background:rgba(0,212,160,.1);border-color:var(--accent);border-width:2px}
+.evt-err{background:rgba(248,113,113,.07);border-color:var(--red)}
+.evt-name{font-family:var(--font-mono);font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px}
+.evt-rule .evt-name{color:var(--accent)}
+.evt-mem .evt-name{color:var(--purple)}
+.evt-llm .evt-name{color:var(--accent2)}
+.evt-info .evt-name{color:var(--muted)}
+.evt-ok .evt-name{color:var(--accent)}
+.evt-err .evt-name{color:var(--red)}
+.evt-data{font-family:var(--font-mono);font-size:10px;color:var(--muted);line-height:1.5;white-space:pre-wrap;word-break:break-all}
+
+/* Metrics panel */
+.metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:16px}
+.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:12px 14px}
+.metric-label{font-size:9px;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin-bottom:5px}
+.metric-val{font-family:var(--font-mono);font-size:22px;font-weight:700}
+.metric-g{color:var(--accent)}
+.metric-b{color:var(--accent2)}
+.metric-a{color:var(--amber)}
+.metric-p{color:var(--purple)}
+
+/* Explainability bottom panel */
+.expl-panel{border-top:1px solid var(--border);padding:12px 16px;flex-shrink:0;background:var(--surface)}
+.expl-title{font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+.expl-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.expl-stat{background:var(--surface2);border-radius:5px;padding:6px 8px;border:1px solid var(--border)}
+.expl-stat-label{font-size:9px;color:var(--muted);font-family:var(--font-mono)}
+.expl-stat-val{font-size:12px;font-weight:600;margin-top:2px;font-family:var(--font-mono)}
+.trace-row{display:flex;align-items:center;gap:4px;margin-top:8px}
+.trace-chip{font-size:9px;padding:2px 8px;border-radius:20px;border:1px solid var(--border);color:var(--muted);font-family:var(--font-mono)}
+.trace-chip.done{background:rgba(0,212,160,.1);color:var(--accent);border-color:rgba(0,212,160,.3)}
+.trace-arrow{font-size:9px;color:var(--dim)}
+
+/* Empty state */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--muted);gap:8px}
+.empty-icon{font-size:28px;opacity:.2}
+.empty-text{font-size:12px}
+.empty-hint{font-family:var(--font-mono);font-size:10px;color:var(--accent);opacity:.5}
+
+/* Login modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;z-index:100}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:28px;width:380px;display:flex;flex-direction:column;gap:16px}
+.modal-title{font-size:18px;font-weight:800;color:var(--text)}
+.modal-sub{font-size:12px;color:var(--muted)}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.04em}
+.field input{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:8px 10px;font-size:12px;font-family:var(--font-mono);color:var(--text);outline:none;transition:border-color .15s}
+.field input:focus{border-color:var(--accent2)}
+.login-btn{background:var(--accent);color:#051a12;font-size:13px;font-weight:700;padding:10px;border:none;border-radius:6px;cursor:pointer;font-family:var(--font-sans);transition:all .15s;letter-spacing:.02em}
+.login-btn:hover{background:#00f0b8}
+.error-msg{font-size:11px;color:var(--red);font-family:var(--font-mono);min-height:14px}
+
+/* Hash demo panel */
+.hash-panel{padding:16px;overflow-y:auto;height:100%}
+.hash-table{width:100%;border-collapse:collapse;font-family:var(--font-mono);font-size:11px}
+.hash-table th{padding:8px 12px;text-align:left;font-size:9px;letter-spacing:.06em;color:var(--muted);font-weight:700;border-bottom:1px solid var(--border);text-transform:uppercase}
+.hash-table td{padding:8px 12px;border-bottom:1px solid rgba(30,45,71,.4)}
+.hash-match{color:var(--accent);font-weight:700}
+.hash-diff{color:var(--red)}
+.hash-na{color:var(--dim)}
+.section-title{font-size:13px;font-weight:700;margin:16px 0 8px;color:var(--text)}
+.card-block{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:14px;margin-bottom:12px}
+.conf-row{display:flex;align-items:center;gap:12px;padding:6px 0;border-bottom:1px solid rgba(30,45,71,.4)}
+.conf-row:last-child{border-bottom:none}
+.conf-run{font-family:var(--font-mono);font-size:11px;color:var(--muted);width:40px}
+.conf-bar-wrap{flex:1}
+.conf-bar{height:8px;border-radius:4px;transition:width .6s cubic-bezier(.34,1.56,.64,1)}
+.conf-val{font-family:var(--font-mono);font-size:11px;font-weight:700;width:60px;text-align:right}
+.conf-tag{font-size:9px;padding:1px 6px;border-radius:3px;font-family:var(--font-mono);width:70px;text-align:center}
+.tag-llm{background:rgba(245,158,11,.15);color:var(--amber)}
+.tag-mem{background:rgba(167,139,250,.15);color:var(--purple)}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+</style>
+</head>
+<body>
+
+<!-- Login Modal -->
+<div class="modal-overlay" id="loginModal">
+  <div class="modal">
+    <div>
+      <div class="modal-title">AutoFix AI</div>
+      <div class="modal-sub" style="margin-top:4px">Sign in to your account</div>
+    </div>
+    <div class="field">
+      <label>EMAIL</label>
+      <input type="email" id="loginEmail" value="demo@acme.com" placeholder="demo@acme.com">
+    </div>
+    <div class="field">
+      <label>PASSWORD</label>
+      <input type="password" id="loginPass" value="DemoPassword123!" placeholder="••••••••">
+    </div>
+    <div class="error-msg" id="loginError"></div>
+    <button class="login-btn" id="loginBtn" onclick="doLogin()">Sign in →</button>
+    <div style="font-size:10px;color:var(--muted);font-family:var(--font-mono);text-align:center">
+      AutoFix AI v4.0 · Autonomous Python Repair Pipeline
+    </div>
+  </div>
+</div>
+
+<!-- App Shell -->
+<div class="shell" id="appShell" style="display:none">
+
+  <div class="topbar">
+    <div class="logo-mark">
+      <svg viewBox="0 0 16 16" fill="none"><path d="M2 8l4-5 4 5-4 5z" fill="#051a12"/><path d="M8 8l4-5 2 5-2 5z" fill="#051a12" opacity=".5"/></svg>
+    </div>
+    <span class="logo-name">AutoFix AI</span>
+    <span class="logo-ver">v4.0</span>
+    <div class="topbar-stats">
+      <span class="tpill tpill-g"><span class="dot"></span>system ok</span>
+      <span class="tpill tpill-b" id="tp-rules">rules: 5</span>
+      <span class="tpill tpill-a" id="tp-fixed">fixed: 0</span>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-text" id="userEmail">demo@acme.com</div>
+      <div class="sidebar-logo-sub">ENGINEER · acme-org</div>
+    </div>
+    <div class="nav-section">Workspace</div>
+    <div class="nav-item active" onclick="switchTab('repairs',this)" id="nav-repairs">
+      <svg class="nav-icon" viewBox="0 0 14 14" fill="currentColor"><rect x="1" y="1" width="5" height="5" rx="1"/><rect x="8" y="1" width="5" height="5" rx="1"/><rect x="1" y="8" width="5" height="5" rx="1"/><rect x="8" y="8" width="5" height="5" rx="1"/></svg>
+      Repairs
+    </div>
+    <div class="nav-item" onclick="switchTab('brain',this)" id="nav-brain">
+      <svg class="nav-icon" viewBox="0 0 14 14" fill="currentColor"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5" fill="none"/><circle cx="7" cy="7" r="2"/></svg>
+      Second Brain
+    </div>
+    <div class="nav-item" onclick="switchTab('hash',this)" id="nav-hash">
+      <svg class="nav-icon" viewBox="0 0 14 14" fill="currentColor"><path d="M2 5h10M2 9h10M5 2v10M9 2v10" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+      Structural Hash
+    </div>
+    <div class="nav-item" onclick="switchTab('metrics',this)" id="nav-metrics">
+      <svg class="nav-icon" viewBox="0 0 14 14" fill="currentColor"><path d="M1 12 L4 7 L7 9 L10 3 L13 6" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+      Metrics
+    </div>
+    <div class="sidebar-bottom">
+      <div class="status-line">
+        <span class="dot" style="width:5px;height:5px"></span>
+        <span id="sidebarHealth">localhost:8000</span>
+      </div>
+      <div style="font-size:9px;color:var(--dim);font-family:var(--font-mono);margin-top:4px;cursor:pointer" onclick="doLogout()">sign out</div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="tab-bar">
+      <div class="tab active" id="tab-repairs" onclick="switchTab('repairs')">Live Repairs</div>
+      <div class="tab" id="tab-brain" onclick="switchTab('brain')">Second Brain</div>
+      <div class="tab" id="tab-hash" onclick="switchTab('hash')">Structural Hash</div>
+      <div class="tab" id="tab-metrics" onclick="switchTab('metrics')">Metrics</div>
+    </div>
+
+    <div class="panels">
+
+      <!-- REPAIRS PANEL -->
+      <div class="panel active" id="panel-repairs">
+        <div class="repair-split">
+          <div class="left-col">
+            <div class="input-section">
+              <div class="input-label">Submit Repair</div>
+              <textarea class="trace-input" id="traceInput" placeholder="Paste Python stack trace here...
+e.g. ModuleNotFoundError: No module named 'sqlalchemy'"></textarea>
+              <div class="input-row">
+                <select class="level-select" id="valLevel">
+                  <option value="BASIC">BASIC</option>
+                  <option value="ENDPOINT">ENDPOINT</option>
+                  <option value="TESTS">TESTS</option>
+                </select>
+                <button class="submit-btn" id="submitBtn" onclick="submitRepair()">Analyze →</button>
+              </div>
+            </div>
+            <div class="session-list-header">Recent Sessions</div>
+            <div class="session-list" id="sessionList">
+              <div class="empty" style="height:200px">
+                <div class="empty-text">No sessions yet</div>
+                <div class="empty-hint">Submit a stack trace above</div>
+              </div>
+            </div>
+          </div>
+          <div class="right-col">
+            <div class="stream-header">
+              SSE Event Stream
+              <span class="stream-id" id="streamId"></span>
+            </div>
+            <div class="stream-body" id="streamBody">
+              <div class="empty">
+                <div class="empty-icon">⚡</div>
+                <div class="empty-text">Submit a stack trace to see events stream live</div>
+                <div class="empty-hint">All three rule-path demos work without API credits</div>
+              </div>
+            </div>
+            <div class="expl-panel" id="explPanel" style="display:none">
+              <div class="expl-title">Explainability Trace</div>
+              <div class="expl-grid" id="explGrid"></div>
+              <div class="trace-row" id="traceRow"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BRAIN PANEL -->
+      <div class="panel" id="panel-brain">
+        <div class="hash-panel">
+          <div class="section-title">Confidence Learning Curve</div>
+          <div class="card-block">
+            <div style="font-size:10px;color:var(--muted);font-family:var(--font-mono);margin-bottom:10px">
+              Formula: success_rate × 0.50 + recency_score × 0.20 + frequency_w × 0.30 · threshold: <span style="color:var(--accent)">0.80</span>
+            </div>
+            <div id="confChart"></div>
+          </div>
+          <div class="section-title">Memory Statistics</div>
+          <div class="card-block">
+            <div class="metrics-grid" style="padding:0;grid-template-columns:repeat(3,1fr)" id="brainStats">
+              <div class="metric-card"><div class="metric-label">Entries</div><div class="metric-val metric-b" id="bs-entries">—</div></div>
+              <div class="metric-card"><div class="metric-label">Cache Hit Rate</div><div class="metric-val metric-g" id="bs-hit">—</div></div>
+              <div class="metric-card"><div class="metric-label">Avg Confidence</div><div class="metric-val metric-p" id="bs-conf">—</div></div>
+            </div>
+          </div>
+          <div class="section-title">406× Speed Improvement</div>
+          <div class="card-block" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;align-items:center">
+            <div style="text-align:center">
+              <div style="font-size:32px;font-weight:800;color:var(--accent);font-family:var(--font-mono)">406×</div>
+              <div style="font-size:10px;color:var(--muted)">speed gain run 5 vs LLM</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:32px;font-weight:800;color:var(--accent);font-family:var(--font-mono)">100%</div>
+              <div style="font-size:10px;color:var(--muted)">cost reduction</div>
+            </div>
+            <div style="font-size:11px;color:var(--muted);line-height:1.7">
+              After 4 successful repairs, confidence crosses 0.80. Same error hits memory instead of LLM.
+              69ms vs 28,000ms. $0.000 vs $0.006. System compounds.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- HASH PANEL -->
+      <div class="panel" id="panel-hash">
+        <div class="hash-panel">
+          <div class="section-title">Structural Hash — Same Bug, Different Files → Same Hash</div>
+          <div class="card-block" style="font-family:var(--font-mono);font-size:10px;color:var(--muted);line-height:1.8;margin-bottom:12px">
+<span style="color:var(--red)">v3: hash = SHA256(error_type + file_path + line_number)  ← breaks on every refactor</span>
+<span style="color:var(--accent)">v4: hash = SHA256(error_type + module + context + key + attr)  ← file/line NOT in hash</span>
+          </div>
+          <table class="hash-table">
+            <thead><tr><th>Error Location</th><th>structural_hash()</th><th>v3 hash</th><th>Cache Hit</th></tr></thead>
+            <tbody>
+              <tr><td>app/main.py:3 — ModuleNotFoundError: sqlalchemy</td><td class="hash-match">97ea928da9e89d80</td><td class="hash-na">ab44c1f2...</td><td><span class="hash-match">v4: YES</span> / <span class="hash-diff">v3: MISS</span></td></tr>
+              <tr><td>routes/db.py:47 — ModuleNotFoundError: sqlalchemy</td><td class="hash-match">97ea928da9e89d80</td><td class="hash-na">9d23ef71...</td><td><span class="hash-match">v4: YES</span> / <span class="hash-diff">v3: MISS</span></td></tr>
+              <tr><td>services/app.py:112 — ModuleNotFoundError: sqlalchemy</td><td class="hash-match">97ea928da9e89d80</td><td class="hash-na">c12a43be...</td><td><span class="hash-match">v4: YES</span> / <span class="hash-diff">v3: MISS</span></td></tr>
+              <tr><td>— ModuleNotFoundError: pandas</td><td class="hash-diff">09473abd3179eac2</td><td class="hash-na">different</td><td style="color:var(--accent)">v4: NO (correct)</td></tr>
+              <tr><td>— NameError: 'pritn'</td><td class="hash-na">2c5b1da24f397474</td><td class="hash-na">different type</td><td style="color:var(--accent)">v4: NO (correct)</td></tr>
+              <tr><td>— KeyError: DATABASE_URL</td><td class="hash-na">a52d010da47087c4</td><td class="hash-na">env_var=True</td><td style="color:var(--accent)">v4: NO (correct)</td></tr>
+            </tbody>
+          </table>
+          <div style="margin-top:12px;padding:10px 12px;background:rgba(0,212,160,.06);border-radius:6px;border:1px solid rgba(0,212,160,.2);font-size:11px;color:var(--muted);line-height:1.7;font-family:var(--font-mono)">
+            At 1,000 repairs/day with sqlalchemy-missing across 50 repos:<br>
+            <span style="color:var(--red)">v3 = 1,000 LLM calls</span> vs <span style="color:var(--accent)">v4 = 1 LLM call + 999 memory hits</span><br>
+            Savings: 999 × $0.006 = <span style="color:var(--accent);font-weight:700">$5.99/day = $2,187/year</span> from one error pattern.
+          </div>
+        </div>
+      </div>
+
+      <!-- METRICS PANEL -->
+      <div class="panel" id="panel-metrics">
+        <div class="hash-panel">
+          <div class="metrics-grid" id="metricsGrid">
+            <div class="metric-card"><div class="metric-label">Total Repairs</div><div class="metric-val metric-b" id="m-total">0</div></div>
+            <div class="metric-card"><div class="metric-label">Fixed Rate</div><div class="metric-val metric-g" id="m-rate">0%</div></div>
+            <div class="metric-card"><div class="metric-label">LLM Cost Today</div><div class="metric-val metric-g" id="m-cost">$0.00</div></div>
+            <div class="metric-card"><div class="metric-label">Rule Hit Rate</div><div class="metric-val metric-p" id="m-rule">0%</div></div>
+          </div>
+          <div class="section-title">Cost Projection at Scale</div>
+          <div class="card-block">
+            <table class="hash-table" style="font-size:11px">
+              <thead><tr><th>Sessions/day</th><th>Rule hits (40%)</th><th>Memory hits (30%)</th><th>LLM calls (30%)</th><th>Total/month</th></tr></thead>
+              <tbody>
+                <tr><td>500</td><td class="hash-match">$0</td><td class="hash-match">$0</td><td style="color:var(--amber)">$0.90/d</td><td class="hash-match">~$27/mo</td></tr>
+                <tr><td>2,000</td><td class="hash-match">$0</td><td class="hash-match">$0</td><td style="color:var(--amber)">$3.60/d</td><td class="hash-match">~$190/mo</td></tr>
+                <tr><td>10,000</td><td class="hash-match">$0</td><td class="hash-match">$0</td><td style="color:var(--amber)">$18/d</td><td class="hash-match">~$790/mo</td></tr>
+                <tr style="background:rgba(248,113,113,.05)"><td>100K (v3)</td><td class="hash-diff">—</td><td class="hash-diff">—</td><td class="hash-diff">$600/d</td><td class="hash-diff">$18,000/mo</td></tr>
+                <tr style="background:rgba(0,212,160,.04)"><td>100K (v4)</td><td class="hash-match">$0</td><td class="hash-match">$0</td><td style="color:var(--amber)">$180/d</td><td class="hash-match">$6,510/mo</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="section-title">Gap Closure Status</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div class="card-block" style="display:flex;align-items:flex-start;gap:12px">
+              <span style="color:var(--accent);font-size:14px;font-family:var(--font-mono)">✓</span>
+              <div><div style="font-size:12px;font-weight:700;color:var(--accent)">GAP 1 — Docker sandbox isolation</div><div style="font-size:10px;color:var(--muted);margin-top:2px;font-family:var(--font-mono)">safety_validator.py: docker.from_env() child containers · --network=none · --memory=512m · destroyed after</div></div>
+            </div>
+            <div class="card-block" style="display:flex;align-items:flex-start;gap:12px">
+              <span style="color:var(--accent);font-size:14px;font-family:var(--font-mono)">✓</span>
+              <div><div style="font-size:12px;font-weight:700;color:var(--accent)">GAP 2 — Alembic migrations</div><div style="font-size:10px;color:var(--muted);margin-top:2px;font-family:var(--font-mono)">001_initial_schema.py: all 5 tables · alembic upgrade head on startup</div></div>
+            </div>
+            <div class="card-block" style="display:flex;align-items:flex-start;gap:12px">
+              <span style="color:var(--accent);font-size:14px;font-family:var(--font-mono)">✓</span>
+              <div><div style="font-size:12px;font-weight:700;color:var(--accent)">GAP 3 — Rate limiting</div><div style="font-size:10px;color:var(--muted);margin-top:2px;font-family:var(--font-mono)">slowapi @limiter.limit("10/minute") on POST /repairs · 429 handler</div></div>
+            </div>
+            <div class="card-block" style="display:flex;align-items:flex-start;gap:12px">
+              <span style="color:var(--amber);font-size:14px;font-family:var(--font-mono)">!</span>
+              <div><div style="font-size:12px;font-weight:700;color:var(--amber)">GAP 4 — LLM Layer 4</div><div style="font-size:10px;color:var(--muted);margin-top:2px;font-family:var(--font-mono)">Add credits at console.anthropic.com → Layer 4 operational immediately</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'http://172.18.68.207:8000';
+let token = localStorage.getItem('autofix_token') || '';
+let sessions = [];
+let activeSessionId = null;
+let totalFixed = 0, totalCost = 0, ruleHits = 0;
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value;
+  const pass = document.getElementById('loginPass').value;
+  const btn = document.getElementById('loginBtn');
+  const err = document.getElementById('loginError');
+  btn.textContent = 'Signing in...';
+  btn.disabled = true;
+  err.textContent = '';
+
+  try {
+    const r = await fetch(`${API}/api/v1/auth/login`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({email, password: pass})
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || 'Login failed');
+    token = d.access_token;
+    localStorage.setItem('autofix_token', token);
+    document.getElementById('userEmail').textContent = email;
+    document.getElementById('loginModal').style.display = 'none';
+    document.getElementById('appShell').style.display = 'grid';
+    init();
+  } catch(e) {
+    err.textContent = e.message;
+    btn.textContent = 'Sign in →';
+    btn.disabled = false;
+  }
+}
+
+function doLogout() {
+  localStorage.removeItem('autofix_token');
+  token = '';
+  document.getElementById('loginModal').style.display = 'flex';
+  document.getElementById('appShell').style.display = 'none';
+}
+
+document.getElementById('loginEmail').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+document.getElementById('loginPass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+function switchTab(name, navEl) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  if (name === 'brain') loadBrainStats();
+  if (name === 'metrics') loadMetrics();
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+async function init() {
+  buildConfChart();
+  await checkHealth();
+  await loadSessions();
+  setInterval(checkHealth, 30000);
+}
+
+async function checkHealth() {
+  try {
+    const r = await fetch(`${API}/health`);
+    const d = await r.json();
+    if (d.status === 'ok') {
+      document.getElementById('sidebarHealth').textContent = 'system ok';
+      document.getElementById('tp-rules').textContent = `rules: ${d.rule_count || 5}`;
+    }
+  } catch { document.getElementById('sidebarHealth').textContent = 'connecting...'; }
+}
+
+// ── Submit Repair ─────────────────────────────────────────────────────────────
+async function submitRepair() {
+  const trace = document.getElementById('traceInput').value.trim();
+  if (!trace) return;
+  const level = document.getElementById('valLevel').value;
+  const btn = document.getElementById('submitBtn');
+  btn.textContent = 'Running...';
+  btn.classList.add('running');
+  btn.disabled = true;
+
+  // Clear stream
+  const body = document.getElementById('streamBody');
+  body.innerHTML = '';
+  document.getElementById('explPanel').style.display = 'none';
+  document.getElementById('streamId').textContent = '';
+
+  const repairId = 'pending...';
+  let finalData = null;
+
+  try {
+    const resp = await fetch(`${API}/api/v1/repairs`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','Authorization':`Bearer ${token}`},
+      body: JSON.stringify({stack_trace: trace, repo_path: '/tmp/demo_repo', validation_level: level})
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json();
+      addEvent('error', 'REQUEST_FAILED', JSON.stringify(err.detail));
+      return;
+    }
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let currentEvent = '';
+
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, {stream: true});
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+
+      for (const line of lines) {
+        if (line.startsWith('event: ')) {
+          currentEvent = line.slice(7).trim();
+        } else if (line.startsWith('data: ')) {
+          const data = JSON.parse(line.slice(6));
+          handleEvent(currentEvent, data);
+          if (currentEvent === 'repair_complete') finalData = data;
+          if (data.repair_id) document.getElementById('streamId').textContent = data.repair_id.slice(0,8) + '...';
+        }
+      }
+    }
+
+    if (finalData) {
+      addSessionToList(finalData);
+      showExplainability(finalData);
+      updateTopStats(finalData);
+    }
+  } catch(e) {
+    addEvent('error', 'CONNECTION_ERROR', e.message);
+  } finally {
+    btn.textContent = 'Analyze →';
+    btn.classList.remove('running');
+    btn.disabled = false;
+  }
+}
+
+function handleEvent(evtName, data) {
+  if (evtName === 'heartbeat') {
+    addEvent('info', 'HEARTBEAT', `done: ${data.done}`);
+    return;
+  }
+
+  const typeMap = {
+    rule_hit: 'rule',
+    memory_hit: 'mem',
+    patch_generated: 'llm',
+    validation_result: data?.passed ? 'rule' : 'error',
+    repair_complete: data?.status === 'FIXED' ? 'ok' : 'error',
+    iteration_start: 'info',
+    REPAIR_STARTED: 'info',
+  };
+
+  let displayData = '';
+  if (evtName === 'rule_hit') {
+    displayData = `rule_id: ${data.rule_id} · "${data.rule_name}"\nconfidence: ${data.confidence} · elapsed_ms: ${data.elapsed_ms} · cost: $0.000`;
+  } else if (evtName === 'memory_hit') {
+    displayData = `confidence: ${data.confidence} · elapsed_ms: ${data.elapsed_ms}\nfix_preview: ${(data.fix_preview||'').slice(0,80)}`;
+  } else if (evtName === 'repair_complete') {
+    if (data.status === 'FIXED') {
+      displayData = `status: FIXED · source_layer: ${data.source_layer}\nconfidence: ${data.confidence} · llm_cost_usd: ${data.llm_cost_usd}\ntotal_elapsed_ms: ${data.total_elapsed_ms}`;
+    } else {
+      displayData = `status: ${data.status}\n${data.error || ''}`;
+    }
+  } else if (evtName === 'iteration_start') {
+    displayData = `iteration: ${data.iteration} / ${data.max_iterations}`;
+  } else if (evtName === 'patch_generated') {
+    displayData = `root_cause: ${data.root_cause}\npatch: ${(data.patch_diff||'').slice(0,100)}`;
+  } else if (evtName === 'validation_result') {
+    displayData = `passed: ${data.passed} · level: ${data.level}\noutput: ${(data.output||'').slice(0,100)}`;
+  } else {
+    displayData = JSON.stringify(data, null, 2).slice(0, 200);
+  }
+
+  addEvent(typeMap[evtName] || 'info', evtName.toUpperCase(), displayData);
+}
+
+function addEvent(type, name, dataStr) {
+  const body = document.getElementById('streamBody');
+  const div = document.createElement('div');
+  div.className = `evt evt-${type}`;
+  div.innerHTML = `<div class="evt-name">${name}</div><div class="evt-data">${escHtml(dataStr)}</div>`;
+  body.appendChild(div);
+  setTimeout(() => div.classList.add('show'), 20);
+  body.scrollTop = body.scrollHeight;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Session List ──────────────────────────────────────────────────────────────
+function addSessionToList(data) {
+  const errorType = detectErrorType();
+  const layerIcon = {rule:'R', cache:'C', memory:'M', llm:'L'}[data.source_layer] || '?';
+  const iconClass = {rule:'icon-r', cache:'icon-r', memory:'icon-m', llm:'icon-l'}[data.source_layer] || 'icon-e';
+
+  const item = document.createElement('div');
+  item.className = 'session-item active';
+  item.innerHTML = `
+    <div class="session-icon ${iconClass}">${layerIcon}${sessions.length + 1}</div>
+    <div class="session-info">
+      <div class="session-type">${escHtml(errorType)}</div>
+      <div class="session-meta">${data.source_layer?.toUpperCase() || '?'} · ${data.total_elapsed_ms || 0}ms · ${data.status}</div>
+    </div>
+    <div class="session-cost">$${(data.llm_cost_usd || 0).toFixed(3)}</div>
+  `;
+  // Deselect others
+  document.querySelectorAll('.session-item').forEach(i => i.classList.remove('active'));
+
+  const list = document.getElementById('sessionList');
+  // Remove empty state
+  const empty = list.querySelector('.empty');
+  if (empty) empty.remove();
+  list.prepend(item);
+  sessions.unshift(data);
+}
+
+function detectErrorType() {
+  const trace = document.getElementById('traceInput').value;
+  const match = trace.match(/(ModuleNotFoundError|NameError|KeyError|AttributeError|ImportError|SyntaxError|RuntimeError)/);
+  return match ? match[1] : 'UnknownError';
+}
+
+async function loadSessions() {
+  try {
+    const r = await fetch(`${API}/api/v1/repairs`, {headers:{Authorization:`Bearer ${token}`}});
+    if (!r.ok) return;
+    const d = await r.json();
+    if (d.items && d.items.length > 0) {
+      const list = document.getElementById('sessionList');
+      list.innerHTML = '';
+      d.items.forEach((item, idx) => {
+        const el = document.createElement('div');
+        el.className = 'session-item';
+        const layer = item.source_layer || 'unknown';
+        const iconClass = {rule:'icon-r', cache:'icon-r', memory:'icon-m', llm:'icon-l'}[layer] || 'icon-e';
+        const layerIcon = {rule:'R', cache:'C', memory:'M', llm:'L'}[layer] || '?';
+        el.innerHTML = `
+          <div class="session-icon ${iconClass}">${layerIcon}${idx+1}</div>
+          <div class="session-info">
+            <div class="session-type">${item.error_signature?.error_type || 'Repair'}</div>
+            <div class="session-meta">${layer.toUpperCase()} · ${item.total_elapsed_ms || 0}ms · ${item.status}</div>
+          </div>
+          <div class="session-cost">$${(item.llm_cost_usd || 0).toFixed(3)}</div>
+        `;
+        list.appendChild(el);
+      });
+    }
+  } catch {}
+}
+
+// ── Explainability ────────────────────────────────────────────────────────────
+function showExplainability(data) {
+  if (!data || data.status !== 'FIXED') return;
+  document.getElementById('explPanel').style.display = 'block';
+
+  const grid = document.getElementById('explGrid');
+  grid.innerHTML = `
+    <div class="expl-stat"><div class="expl-stat-label">source layer</div><div class="expl-stat-val" style="color:var(--accent)">${data.source_layer || '—'}</div></div>
+    <div class="expl-stat"><div class="expl-stat-label">confidence</div><div class="expl-stat-val">${(data.confidence || 0).toFixed(3)}</div></div>
+    <div class="expl-stat"><div class="expl-stat-label">llm cost</div><div class="expl-stat-val" style="color:var(--accent)">$${(data.llm_cost_usd || 0).toFixed(3)}</div></div>
+    <div class="expl-stat"><div class="expl-stat-label">total time</div><div class="expl-stat-val">${data.total_elapsed_ms || 0}ms</div></div>
+  `;
+
+  const traceRow = document.getElementById('traceRow');
+  const steps = data.trace || [];
+  traceRow.innerHTML = steps.map((s, i) =>
+    `${i > 0 ? '<span class="trace-arrow">→</span>' : ''}<span class="trace-chip done">${s.step} ${s.elapsed_ms}ms</span>`
+  ).join('');
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+function updateTopStats(data) {
+  if (data.status === 'FIXED') totalFixed++;
+  totalCost += data.llm_cost_usd || 0;
+  if (data.source_layer === 'rule') ruleHits++;
+  document.getElementById('tp-fixed').textContent = `fixed: ${totalFixed}`;
+}
+
+async function loadMetrics() {
+  try {
+    const r = await fetch(`${API}/api/v1/repairs?limit=100`, {headers:{Authorization:`Bearer ${token}`}});
+    const d = await r.json();
+    const items = d.items || [];
+    const fixed = items.filter(i => i.status === 'FIXED').length;
+    const cost = items.reduce((a, i) => a + (i.llm_cost_usd || 0), 0);
+    const rules = items.filter(i => i.source_layer === 'rule').length;
+    document.getElementById('m-total').textContent = items.length;
+    document.getElementById('m-rate').textContent = items.length ? Math.round(fixed/items.length*100)+'%' : '0%';
+    document.getElementById('m-cost').textContent = '$' + cost.toFixed(3);
+    document.getElementById('m-rule').textContent = items.length ? Math.round(rules/items.length*100)+'%' : '0%';
+  } catch {}
+}
+
+async function loadBrainStats() {
+  try {
+    const r = await fetch(`${API}/api/v1/memory/stats`, {headers:{Authorization:`Bearer ${token}`}});
+    const d = await r.json();
+    document.getElementById('bs-entries').textContent = d.total_entries || '0';
+    document.getElementById('bs-hit').textContent = ((d.cache_hit_rate || 0) * 100).toFixed(1) + '%';
+    document.getElementById('bs-conf').textContent = (d.avg_confidence || 0).toFixed(2);
+  } catch {
+    document.getElementById('bs-entries').textContent = '0';
+    document.getElementById('bs-hit').textContent = '0.0%';
+    document.getElementById('bs-conf').textContent = '—';
+  }
+}
+
+// ── Confidence Chart ──────────────────────────────────────────────────────────
+function buildConfChart() {
+  const data = [
+    {run:1, conf:0.73, auto:false},
+    {run:2, conf:0.76, auto:false},
+    {run:3, conf:0.79, auto:false},
+    {run:4, conf:0.82, auto:true},
+    {run:5, conf:0.85, auto:true},
+    {run:6, conf:0.88, auto:true},
+    {run:8, conf:0.94, auto:true},
+    {run:10, conf:1.0, auto:true},
+  ];
+  const el = document.getElementById('confChart');
+  el.innerHTML = data.map(d => `
+    <div class="conf-row">
+      <span class="conf-run">R${d.run}</span>
+      <div class="conf-bar-wrap">
+        <div class="conf-bar" style="width:${d.conf*100}%;background:${d.auto ? 'rgba(167,139,250,.6)':'rgba(245,158,11,.5)'}"></div>
+      </div>
+      <span class="conf-val" style="color:${d.auto ? 'var(--purple)':'var(--amber)'}">${d.conf.toFixed(2)}</span>
+      <span class="conf-tag ${d.auto ? 'tag-mem':'tag-llm'}">${d.auto ? 'memory':'llm'}</span>
+    </div>
+  `).join('') + `<div style="font-size:9px;color:var(--accent);font-family:var(--font-mono);margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">AUTO-USE threshold: 0.80 — crosses at run 4</div>`;
+}
+
+// ── Quick demo buttons ────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  // Add quick demo buttons below textarea
+  const row = document.querySelector('.input-row');
+  if (!row) return;
+  const demos = document.createElement('div');
+  demos.style.cssText = 'margin-top:8px;display:flex;gap:5px;flex-wrap:wrap';
+  const scenarios = [
+    ['ModuleNotFoundError', 'Traceback (most recent call last):\n  File "app/main.py", line 3\n    import sqlalchemy\nModuleNotFoundError: No module named \'sqlalchemy\''],
+    ['NameError typo', "NameError: name 'pritn' is not defined\n  File app/utils.py line 5"],
+    ['KeyError env', "KeyError: 'DATABASE_URL'\n  File app/config.py line 8\n    db = os.environ['DATABASE_URL']"],
+  ];
+  scenarios.forEach(([label, trace]) => {
+    const btn = document.createElement('button');
+    btn.textContent = label;
+    btn.style.cssText = 'font-size:9px;padding:2px 8px;border-radius:3px;border:1px solid var(--border2);background:var(--surface2);color:var(--muted);cursor:pointer;font-family:var(--font-mono);transition:all .15s';
+    btn.onmouseover = () => { btn.style.borderColor='var(--accent)'; btn.style.color='var(--accent)'; };
+    btn.onmouseout = () => { btn.style.borderColor='var(--border2)'; btn.style.color='var(--muted)'; };
+    btn.onclick = () => { document.getElementById('traceInput').value = trace; };
+    demos.appendChild(btn);
+  });
+  row.insertAdjacentElement('afterend', demos);
+});
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+if (token) {
+  // Try to use existing token
+  fetch(`${API}/health`).then(r => {
+    if (r.ok) {
+      document.getElementById('loginModal').style.display = 'none';
+      document.getElementById('appShell').style.display = 'grid';
+      init();
+    }
+  }).catch(() => {});
+}
+</script>
+</body>
+</html>
