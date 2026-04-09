@@ -83,7 +83,7 @@ app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 # ── CORS ──────────────────────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"] if not settings.is_production else [],
+    allow_origins=["*"],  # frontend on :3000 and :5173
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

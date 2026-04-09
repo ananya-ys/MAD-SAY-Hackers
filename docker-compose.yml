@@ -1,10 +1,4 @@
-version: "3.9"
-
-# AutoFix AI — development docker-compose
-# GAP 1 FIX: app container mounts /var/run/docker.sock so SafetyValidatorService
-# can spawn ephemeral child containers for patch validation (Docker-in-Docker pattern).
-# The child containers run with --network=none --memory=512m --no-new-privileges.
-
+# Removed obsolete version tag to clear the warning
 services:
   app:
     build:
@@ -14,23 +8,24 @@ services:
     ports:
       - "8000:8000"
     environment:
+      # These variables override your .env file inside the container
       APP_ENV: development
       DATABASE_URL: postgresql+asyncpg://autofix:autofix@db:5432/autofix
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      SECRET_KEY: ${SECRET_KEY:-dev-secret-change-me-in-production-min-32}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      SECRET_KEY: ${SECRET_KEY}
       LOG_LEVEL: INFO
       DEBUG: "false"
       WIKI_DIR: /app/debug_wiki/errors
+      PORT: 8000
     volumes:
       - ./debug_wiki:/app/debug_wiki
       - ./config:/app/config:ro
-      # GAP 1 FIX: Docker socket mount — allows app to spawn child containers for sandbox
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock # GAP 1: Sandbox isolation
     depends_on:
       db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -44,7 +39,7 @@ services:
       POSTGRES_PASSWORD: autofix
       POSTGRES_DB: autofix
     ports:
-      - "5432:5432"
+      - "5433:5432" # Changed external port to 5433 to avoid local collisions
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -52,6 +47,14 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
+
+  frontend: # MOVED: Now correctly aligned under 'services'
+    image: nginx:alpine
+    ports:
+      - "3000:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
     restart: unless-stopped
 
 volumes:
