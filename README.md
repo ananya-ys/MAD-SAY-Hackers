@@ -28,3 +28,30 @@ curl -X POST http://localhost:8000/api/v1/repairs \
 
 ## Stack
 FastAPI · PostgreSQL · SQLAlchemy Async 2.0 · Alembic · JWT/Argon2 · Prometheus · Docker
+
+# 🚀 AutoFix AI v4.0
+
+Self-learning autonomous debugging engine.
+
+## 🔥 Features
+
+- ⚡ Rule-based instant fixes (<5ms, $0 cost)
+- 🧠 Second Brain (memory + confidence scoring)
+- 🤖 LLM fallback (mock-enabled, zero cost demo)
+- 🔁 Autonomous repair loop (run → fix → validate)
+- 🐳 Docker sandbox execution
+
+---
+
+## 🌐 Live API
+
+👉 https://your-render-url.onrender.com/docs
+
+---
+
+## 🧪 Demo (No API Key Needed)
+
+```bash
+curl -X POST https://your-render-url.onrender.com/api/v1/repairs \
+-H "Content-Type: application/json" \
+-d '{"stack_trace":"ModuleNotFoundError: No module named sqlalchemy","repo_path":"/tmp/demo","validation_level":"BASIC"}'

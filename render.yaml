@@ -1,5 +1,25 @@
 services:
   - type: web
+    name: autofix-ai-backend
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+
+    envVars:
+      - key: APP_ENV
+        value: production
+
+      - key: SECRET_KEY
+        generateValue: true
+
+      - key: DATABASE_URL
+        value: sqlite:///./autofix.db
+
+      - key: USE_MOCK_LLM
+        value: "true"
+
+    healthCheckPath: /healthservices:
+  - type: web
     name: autofix-ai-api
     runtime: docker
     dockerfilePath: ./Dockerfile
