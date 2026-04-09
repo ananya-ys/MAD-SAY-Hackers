@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 __pycache__/
 *.pyc
 *.pyo
@@ -11,3 +12,7 @@ dist/
 *.egg-info/
 .venv/
 venv/
+=======
+.env
+*:Zone.Identifier
+>>>>>>> origin/main
