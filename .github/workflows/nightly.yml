@@ -1,0 +1,52 @@
+name: AutoFix AI — Nightly (100 workers)
+
+on:
+  schedule:
+    - cron: "0 2 * * *"   # 2 AM UTC nightly
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: "3.12"
+  DATABASE_URL: sqlite+aiosqlite:///./nightly_test.db
+  SECRET_KEY: "nightly-test-secret-min-32-chars-here"
+  ANTHROPIC_API_KEY: "sk-ant-test-nightly"
+  APP_ENV: development
+
+jobs:
+  concurrency-100:
+    name: Concurrency (100 workers)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - run: pip install -r requirements.txt pytest-xdist
+      - run: pytest tests/concurrency/ -v --timeout=300 -n 8 --reruns=2
+        env:
+          CONCURRENCY_WORKERS: "100"
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+          SECRET_KEY: ${{ env.SECRET_KEY }}
+          ANTHROPIC_API_KEY: ${{ env.ANTHROPIC_API_KEY }}
+          APP_ENV: ${{ env.APP_ENV }}
+
+  full-coverage:
+    name: Full Coverage Report
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: |
+          pytest tests/unit/ tests/integration/ \
+            --cov=app --cov-report=xml --cov-report=term-missing \
+            --cov-fail-under=80 --timeout=120
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL }}
+          SECRET_KEY: ${{ env.SECRET_KEY }}
+          ANTHROPIC_API_KEY: ${{ env.ANTHROPIC_API_KEY }}
+          APP_ENV: ${{ env.APP_ENV }}

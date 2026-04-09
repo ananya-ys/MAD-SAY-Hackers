@@ -1,0 +1,24 @@
+# config/rules.yaml
+# SRE-managed org-specific rules. Git-tracked. Hot-reloadable — no redeploy required.
+# Condition: field-access only on ErrorSignature fields. No arbitrary code.
+# Available fields: error_type, module, context, key, attr, typo_candidate,
+#                   env_var_name, key_is_env_var, language
+# Action types: ADD_PACKAGE | CORRECT_TYPO | ADD_ENV_VAR | FIX_IMPORT | FIX_SYNTAX | ADD_NONE_GUARD
+#
+# Example org-specific rules below. Uncomment and customise.
+
+# - id: "ORG-001"
+#   name: "Our internal package missing"
+#   condition: "error_type == 'ModuleNotFoundError' and module == 'our_internal_lib'"
+#   action_type: "ADD_PACKAGE"
+#   action_params:
+#     package: "our_internal_lib>=2.0.0"
+#   confidence: 0.98
+
+# - id: "ORG-002"
+#   name: "Missing DATABASE_URL env var"
+#   condition: "error_type == 'KeyError' and env_var_name == 'DATABASE_URL'"
+#   action_type: "ADD_ENV_VAR"
+#   action_params:
+#     default: "postgresql+asyncpg://user:password@localhost:5432/mydb"
+#   confidence: 0.95
